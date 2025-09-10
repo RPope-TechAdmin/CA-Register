@@ -1,3 +1,0 @@
-azureazure-functions
-azure-identity
-pymssql
