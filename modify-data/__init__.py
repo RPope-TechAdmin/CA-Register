@@ -14,7 +14,7 @@ CONN_STR = (
     "Database=ConsignmentsQLD;"
     "Uid=CARegister;"
     "Pwd=C4R3g1s73r;"
-    "Encrypt=yes;TrustServerCertificate=no;"
+    "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30"
 )
 
 def run_sql(query: str):
