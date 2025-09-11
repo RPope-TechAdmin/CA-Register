@@ -7,28 +7,42 @@ from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
+# ========= CONFIG =========
+# Read from Function App settings (Configuration → Application settings)
+SQL_SERVER = "purenvqld.database.windows.net"
+SQL_DATABASE = "ConsignmentsQLD"
+SQL_USERNAME = "CARegister"
+SQL_PASSWORD = "C4R3g1s73r"
+
 # === SQL CONNECTION STRING ===
-CONN_STR = (
-    "Driver={{ODBC Driver 17 for SQL Server}};"
-    "Server=tcp:purenvqld.database.windows.net,1433;"
-    "Database=ConsignmentsQLD;"
-    "Uid=CARegister;"
-    "Pwd=C4R3g1s73r;"
-    "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30"
-)
+def connect_with_fallback(timeout_seconds: int = 60) -> pyodbc.Connection:
+    """
+    Try ODBC Driver 18 then 17. Increase Connection Timeout and retry a few times
+    (useful if Azure SQL Serverless is resuming).
+    """
+    drivers = ["ODBC Driver 18 for SQL Server", "ODBC Driver 17 for SQL Server"]
+    last_exc = None
 
-def run_sql(query: str):
-    with pyodbc.connect(CONN_STR, autocommit=True) as conn:
-        cursor = conn.cursor()
-        cursor.execute(query)
-
-        if cursor.description:  # SELECT query
-            cols = [c[0] for c in cursor.description]
-            rows = [dict(zip(cols, r)) for r in cursor.fetchall()]
-            return {"columns": cols, "rows": rows}
-        else:  # INSERT/UPDATE/DELETE
-            return {"status": "ok"}
-
+    for driver in drivers:
+        conn_str = (
+            f"Driver={{{driver}}};"
+            f"Server=tcp:{SQL_SERVER},1433;"
+            f"Database={SQL_DATABASE};"
+            f"Uid={SQL_USERNAME};"
+            f"Pwd={SQL_PASSWORD};"
+            "Encrypt=yes;"
+            "TrustServerCertificate=no;"
+            f"Connection Timeout={timeout_seconds};"
+        )
+        for attempt in range(3):
+            try:
+                return pyodbc.connect(conn_str)
+            except Exception as e:
+                last_exc = e
+                logging.warning(f"Connect attempt {attempt+1}/3 with {driver} failed: {e}")
+                time.sleep(3)
+    # If we get here, all attempts failed
+    raise last_exc
 # ---------- ENDPOINTS ----------
 @app.get("/health")
 def health_check():
