@@ -12,7 +12,7 @@ CONN_STR = (
     f"Driver={{ODBC Driver 18 for SQL Server}};"
     f"Server={os.getenv('SQL_SERVER')};"
     f"Database={os.getenv('SQL_DATABASE')};"
-    f"Uid={os.getenv('SQL_USER')};"
+    f"Uid={os.getenv('SQL_USERNAME')};"
     f"Pwd={os.getenv('SQL_PASSWORD')};"
     "Encrypt=yes;TrustServerCertificate=no;"
 )
