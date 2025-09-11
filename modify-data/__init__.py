@@ -17,6 +17,13 @@ CONN_STR = (
     "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30"
 )
 
+def initial_conn():
+    try:
+        conn = pyodbc.connect(CONN_STR, autocommit=True)
+        cursor = conn.cursor()
+    except Exception as e:
+        raise SystemExit(f"Could not connect to SQL: {e}")
+
 def run_sql(query: str):
     with pyodbc.connect(CONN_STR, autocommit=True) as conn:
         cursor = conn.cursor()
