@@ -9,11 +9,11 @@ app = FastAPI()
 
 # === SQL CONNECTION STRING ===
 CONN_STR = (
-    f"Driver={{ODBC Driver 17 for SQL Server}};"
-    f"Server=tcp:{os.getenv('SQL_SERVER')},1433;"
-    f"Database={os.getenv('SQL_DATABASE')};"
-    f"Uid={os.getenv('SQL_USERNAME')};"
-    f"Pwd={os.getenv('SQL_PASSWORD')};"
+    "Driver={{ODBC Driver 17 for SQL Server}};"
+    "Server=tcp:purenvqld.database.windows.net,1433;"
+    "Database=ConsignmentsQLD;"
+    "Uid=CARegister;"
+    "Pwd=C4R3g1s73r;"
     "Encrypt=yes;TrustServerCertificate=no;"
 )
 
