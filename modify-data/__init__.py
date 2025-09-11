@@ -9,7 +9,7 @@ app = FastAPI()
 
 # === SQL CONNECTION STRING ===
 CONN_STR = (
-    f"Driver={{ODBC Driver 18 for SQL Server}};"
+    f"Driver={{ODBC Driver 17 for SQL Server}};"
     f"Server={os.getenv('SQL_SERVER')};"
     f"Database={os.getenv('SQL_DATABASE')};"
     f"Uid={os.getenv('SQL_USERNAME')};"
