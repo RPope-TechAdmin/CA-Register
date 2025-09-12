@@ -6,7 +6,7 @@
       "direction": "in",
       "name": "req",
       "methods": ["post", "get", "options"],
-      "route": "modify-data"
+      "route": "load_wtc_data"
     },
     {
       "type": "http",

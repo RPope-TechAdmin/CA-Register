@@ -6,7 +6,7 @@
       "direction": "in",
       "name": "req",
       "methods": ["post", "get", "options"],
-      "route": "modify-data"
+      "route": "insert_in_data"
     },
     {
       "type": "http",

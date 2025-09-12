@@ -1,50 +1,42 @@
-import os
+import logging
+import azure.functions as func
 import pyodbc
-from datetime import date, time
-from fastapi import FastAPI, Query, Request
-from fastapi.responses import JSONResponse
+import os
+from datetime import date
+import json
 
-app = FastAPI()
+def main(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info("Processing load_in_data request.")
 
-# === CONNECTION STRING VARIABLES ===
-SQL_SERVER = "purenvqld.database.windows.net"
-SQL_DATABASE = "ConsignmentsQLD"
-SQL_USERNAME = "CARegister"
-SQL_PASSWORD = "C4R3g1s73r"
-
-conn_str = (
+    conn_str = (
         r"Driver={ODBC Driver 17 for SQL Server};"
-        f"Server=tcp:{SQL_SERVER},1433;"
-        f"Database={SQL_DATABASE};"
-        f"Uid={SQL_USERNAME};"
-        f"Pwd={SQL_PASSWORD};"
+        f"Server=tcp:{os.getenv('SQL_SERVER')},1433;"
+        f"Database={os.getenv('SQL_DATABASE')};"
+        f"Uid={os.getenv('SQL_USERNAME')};"
+        f"Pwd={os.getenv('SQL_PASSWORD')};"
         "Encrypt=yes;TrustServerCertificate=no;"
     )
 
-# === SQL CONNECTION STRING ===
-def run_sql(query: str):
-    with pyodbc.connect(conn_str, autocommit=True) as conn:
-        cursor = conn.cursor()
-        cursor.execute(query)
+    today = date.today().strftime("%Y/%m/%d")
+    query = f"""
+        SELECT [ID], [Auth Site], [Auth Number], [Start Date], [Exp Date], [State],
+               [Receiver], [NEPM], [Phys State], [Tonnage Initial],
+               [Tonnage Remaining], [Generator], [Responsible]
+        FROM [Register].[Outgoing] 
+        ORDER BY [Exp Date] ASC
+    """
 
-        if cursor.description:  # SELECT query
-            cols = [c[0] for c in cursor.description]
-            rows = [list(r) for r in cursor.fetchall()]
-            return {"columns": cols, "rows": rows}
-        else:
-            return {"status": "ok"}
-
-@app.get("/load_all_out_data")
-def load_all_out_data():
     try:
-        query = f"""
-            SELECT [ID], [Auth Site], [Auth Number], [Start Date], [Exp Date], [State],
-                   [Receiver], [NEPM], [Phys State], [Tonnage Initial],
-                   [Tonnage Remaining], [Generator], [Responsible]
-            FROM [Register].[Outgoing] 
-            ORDER BY [Exp Date] ASC
-        """
-        result = run_sql(query)
-        return result
+        with pyodbc.connect(conn_str, autocommit=True) as conn:
+            cursor = conn.cursor()
+            cursor.execute(query)
+            cols = [c[0] for c in cursor.description]
+            rows = [dict(zip(cols, r)) for r in cursor.fetchall()]
+
+        return func.HttpResponse(
+            body=json.dumps({"columns": cols, "rows": rows}),
+            mimetype="application/json"
+        )
+
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        return func.HttpResponse(f"Error: {e}", status_code=500)
