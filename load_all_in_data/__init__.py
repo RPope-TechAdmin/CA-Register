@@ -1,6 +1,6 @@
 import logging
 import azure.functions as func
-import pyodbc
+import pymssql
 import os
 from datetime import date
 import json
@@ -8,17 +8,15 @@ import json
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info("Processing load_in_data request.")
 
-    conn_str = (
-        r"Driver={ODBC Driver 17 for SQL Server};"
-        f"Server=tcp:{os.getenv('SQL_SERVER')},1433;"
-        f"Database={os.getenv('SQL_DATABASE')};"
-        f"Uid={os.getenv('SQL_USERNAME')};"
-        f"Pwd={os.getenv('SQL_PASSWORD')};"
-        "Encrypt=yes;TrustServerCertificate=no;"
-    )
+    # === CONNECTION VARIABLES FROM APP SETTINGS ===
+    server = os.getenv("SQL_SERVER")
+    database = os.getenv("SQL_DATABASE")
+    username = os.getenv("SQL_USERNAME")
+    password = os.getenv("SQL_PASSWORD")
 
-    today = date.today().strftime("%Y/%m/%d")
-    query = f"""
+    today = date.today()
+
+    query = """
         SELECT [ID], [Auth Site], [Auth Number], [Start Date], [Exp Date], [State],
                [Sender], [NEPM], [Phys State], [Tonnage Initial],
                [Tonnage Remaining], [Generator], [Responsible]
@@ -27,16 +25,17 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     """
 
     try:
-        with pyodbc.connect(conn_str, autocommit=True) as conn:
-            cursor = conn.cursor()
-            cursor.execute(query)
-            cols = [c[0] for c in cursor.description]
-            rows = [dict(zip(cols, r)) for r in cursor.fetchall()]
+        with pymssql.connect(server, username, password, database) as conn:
+            cursor = conn.cursor(as_dict=True)
+            cursor.execute(query, (today, 0))  # safe parameterization
+            rows = cursor.fetchall()
+            cols = list(rows[0].keys()) if rows else []
 
         return func.HttpResponse(
-            body=json.dumps({"columns": cols, "rows": rows}),
+            body=json.dumps({"columns": cols, "rows": rows}, default=str),
             mimetype="application/json"
         )
 
     except Exception as e:
+        logging.error(f"Database query failed: {e}")
         return func.HttpResponse(f"Error: {e}", status_code=500)

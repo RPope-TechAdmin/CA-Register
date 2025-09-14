@@ -1,6 +1,6 @@
 import logging
 import azure.functions as func
-import pyodbc
+import pymssql
 import os
 import json
 
@@ -15,41 +15,45 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         auth_number = data.get("auth_num")
         ship_date = data.get("ship_date")
         use_date = data.get("use_date")
-        direction = data.get("direction")
+        direction = data.get("direction")   # "Incoming" or "Outgoing"
         wtcqld = data.get("wtcqld")
-        wtcext = data.get("qtcext")
+        wtcext = data.get("wtcext")
         nepm = data.get("nepm")
         tonnage = data.get("tonnage")
         responsible = data.get("applicant")
 
-
-        conn_str = (
-            r"Driver={ODBC Driver 17 for SQL Server};"
-            f"Server=tcp:{os.getenv('SQL_SERVER')},1433;"
-            f"Database={os.getenv('SQL_DATABASE')};"
-            f"Uid={os.getenv('SQL_USERNAME')};"
-            f"Pwd={os.getenv('SQL_PASSWORD')};"
-            "Encrypt=yes;TrustServerCertificate=no;"
+        # === Connect with pymssql ===
+        conn = pymssql.connect(
+            server=os.getenv("SQL_SERVER"),
+            user=os.getenv("SQL_USERNAME"),
+            password=os.getenv("SQL_PASSWORD"),
+            database=os.getenv("SQL_DATABASE"),
+            port=1433
         )
+        cursor = conn.cursor()
 
-        query = """
+        # === Insert into WTC table ===
+        query_insert = """
             INSERT INTO [Register].[WTC] 
             ([Auth Site], [Auth Number], [Ship Date], [Use Date], [Incoming/Outgoing],
              [WTC QLD], [WTC Ext], [NEPM], [Tonnage], [Responsible])
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
+        cursor.execute(query_insert, (
+            auth_site, auth_number, ship_date, use_date, direction,
+            wtcqld, wtcext, nepm, tonnage, responsible
+        ))
 
-        query_2= f"""
-            UPDATE TABLE [Register].[{direction}]
-            SET [Tonnage Remaining] = [Tonnage Remaining] - {tonnage}
-            WHERE [Auth Number] = {auth_number} AND [NEPM] = {nepm} """
+        # === Update the corresponding Incoming/Outgoing table ===
+        query_update = f"""
+            UPDATE [Register].[{direction}]
+            SET [Tonnage Remaining] = [Tonnage Remaining] - %s
+            WHERE [Auth Number] = %s AND [NEPM] = %s
+        """
+        cursor.execute(query_update, (tonnage, auth_number, nepm))
 
-        with pyodbc.connect(conn_str, autocommit=True) as conn:
-            cursor = conn.cursor()
-            cursor.execute(query, (
-                auth_site, auth_number, ship_date, use_date, direction,
-                wtcqld, wtcext, nepm, tonnage, responsible))
-            cursor.execute(query_2)
+        conn.commit()
+        conn.close()
 
         return func.HttpResponse(
             body=json.dumps({"status": "inserted"}),

@@ -1,6 +1,6 @@
 import logging
 import azure.functions as func
-import pyodbc
+import pymssql
 import os
 import json
 
@@ -29,31 +29,33 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         generator = data.get("generator")
         responsible = data.get("applicant")
 
-        conn_str = (
-            r"Driver={ODBC Driver 17 for SQL Server};"
-            f"Server=tcp:{os.getenv('SQL_SERVER')},1433;"
-            f"Database={os.getenv('SQL_DATABASE')};"
-            f"Uid={os.getenv('SQL_USERNAME')};"
-            f"Pwd={os.getenv('SQL_PASSWORD')};"
-            "Encrypt=yes;TrustServerCertificate=no;"
+        # === pymssql connection (use env vars from Azure settings) ===
+        conn = pymssql.connect(
+            server=os.getenv("SQL_SERVER"),
+            user=os.getenv("SQL_USERNAME"),
+            password=os.getenv("SQL_PASSWORD"),
+            database=os.getenv("SQL_DATABASE"),
+            port=1433
         )
 
         query = """
             INSERT INTO [Register].[Incoming] 
             ([Auth Site], [Auth Number], [Start Date], [Exp Date], [State],
-             [Sender],[License],[Detination],[Transporter],[Transporter License],[NEPM],[Description],
-             [Phys State], [Tonnage Initial], [Tonnage Remaining], [Generator], [Responsible])
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             [Sender], [License], [Detination], [Transporter], [Transporter License],
+             [NEPM], [Description], [Phys State], [Tonnage Initial],
+             [Tonnage Remaining], [Generator], [Responsible])
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
 
-        with pyodbc.connect(conn_str, autocommit=True) as conn:
-            cursor = conn.cursor()
-            cursor.execute(query, (
-                auth_site, auth_number, start_date, exp_date, state,
-                sender, sender_license, destination, transporter, trans_lic,
-                nepm, description, phys_state, tonnage_initial,
-                tonnage_remaining, generator, responsible
-            ))
+        cursor = conn.cursor()
+        cursor.execute(query, (
+            auth_site, auth_number, start_date, exp_date, state,
+            sender, sender_license, destination, transporter, trans_lic,
+            nepm, description, phys_state, tonnage_initial,
+            tonnage_remaining, generator, responsible
+        ))
+        conn.commit()
+        conn.close()
 
         return func.HttpResponse(
             body=json.dumps({"status": "inserted"}),
