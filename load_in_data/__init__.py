@@ -17,13 +17,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         "Encrypt=yes;TrustServerCertificate=no;"
     )
 
-    today = date.today().strftime("%Y/%m/%d")
+    today = date.today().strftime("%Y-%m-%d")
     query = f"""
         SELECT [ID], [Auth Site], [Auth Number], [Start Date], [Exp Date], [State],
                [Sender], [NEPM], [Phys State], [Tonnage Initial],
                [Tonnage Remaining], [Generator], [Responsible]
         FROM [Register].[Incoming] 
-        WHERE ([Exp Date] >= '{today}') AND ([Tonnage Remaining] > '0') 
+        WHERE ([Exp Date] >= '{today}') AND ([Tonnage Remaining] > 0) 
         ORDER BY [Exp Date] ASC
     """
     logging.info(f"Connection String: {conn_str}, Query = {query}")
