@@ -8,44 +8,29 @@ import json
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info("Processing load_in_data request.")
 
-    # === CONNECTION VARIABLES (from Azure Function App Settings) ===
-    sql_server = os.getenv("SQL_SERVER")
-    sql_database = os.getenv("SQL_DATABASE")
-    sql_username = os.getenv("SQL_USERNAME")
-    sql_password = os.getenv("SQL_PASSWORD")
+    # === CONNECTION VARIABLES FROM APP SETTINGS ===
+    server = os.getenv("SQL_SERVER")
+    database = os.getenv("SQL_DATABASE")
+    username = os.getenv("SQL_USERNAME")
+    password = os.getenv("SQL_PASSWORD")
 
-    today = date.today().strftime("%Y-%m-%d")
+    today = date.today()
 
-    query = f"""
+    query = """
         SELECT [ID], [Auth Site], [Auth Number], [Start Date], [Exp Date], [State],
                [Sender], [NEPM], [Phys State], [Tonnage Initial],
                [Tonnage Remaining], [Generator], [Responsible]
         FROM [Register].[Incoming] 
-        WHERE ([Exp Date] >= '{today}') AND ([Tonnage Remaining] > 0)
+        WHERE [Exp Date] >= %s AND [Tonnage Remaining] > %s
         ORDER BY [Exp Date] ASC
     """
 
     try:
-        logging.info(f"Connecting to server={sql_server}, db={sql_database}, user={sql_username}")
-
-        # Connect with pymssql
-        conn = pymssql.connect(
-            server=sql_server,
-            user=sql_username,
-            password=sql_password,
-            database=sql_database,
-            port=1433,
-            as_dict=True  # fetch results as dicts
-        )
-
-        cursor = conn.cursor()
-        cursor.execute(query, (today,))
-        rows = cursor.fetchall()
-
-        cols = list(rows[0].keys()) if rows else []
-        logging.info(f"Query executed. {len(rows)} rows returned.")
-
-        conn.close()
+        with pymssql.connect(server, username, password, database) as conn:
+            cursor = conn.cursor(as_dict=True)
+            cursor.execute(query, (today, 0))  # safe parameterization
+            rows = cursor.fetchall()
+            cols = list(rows[0].keys()) if rows else []
 
         return func.HttpResponse(
             body=json.dumps({"columns": cols, "rows": rows}, default=str),
