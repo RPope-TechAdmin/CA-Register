@@ -21,16 +21,25 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                [Sender], [NEPM], [Phys State], [Tonnage Initial],
                [Tonnage Remaining], [Generator], [Responsible]
         FROM [Register].[Incoming] 
-        WHERE [Exp Date] >= %s AND [Tonnage Remaining] > '%s'
+        WHERE [Exp Date] >= %s AND [Tonnage Remaining] > %s
         ORDER BY [Exp Date] ASC
     """
 
     try:
         with pymssql.connect(server, username, password, database) as conn:
             cursor = conn.cursor(as_dict=True)
-            cursor.execute(query, (today, 0))  # safe parameterization
+            cursor.execute(query, (today, 0))  # parameterized safely
             rows = cursor.fetchall()
-            cols = list(rows[0].keys()) if rows else []
+
+            # Ensure columns list is always available
+            if rows:
+                cols = list(rows[0].keys())
+            else:
+                # If no rows returned, fetch column names from description
+                cursor2 = conn.cursor()
+                cursor2.execute(query, (today, 0))
+                cols = [desc[0] for desc in cursor2.description]
+                cursor2.close()
 
         return func.HttpResponse(
             body=json.dumps({"columns": cols, "rows": rows}, default=str),
