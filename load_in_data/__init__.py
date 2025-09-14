@@ -26,13 +26,16 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         WHERE ([Exp Date] >= '{today}') AND ([Tonnage Remaining] > '0') 
         ORDER BY [Exp Date] ASC
     """
+    logging.info(f"Connection String: {conn_str}, Query = {query}")
 
     try:
         with pyodbc.connect(conn_str, autocommit=True) as conn:
+            logging.info("Attempting connection...")
             cursor = conn.cursor()
             cursor.execute(query)
             cols = [c[0] for c in cursor.description]
             rows = [dict(zip(cols, r)) for r in cursor.fetchall()]
+            logging.info(f"Information returned: {cols}, {rows}")
 
         return func.HttpResponse(
             body=json.dumps({"columns": cols, "rows": rows}),
