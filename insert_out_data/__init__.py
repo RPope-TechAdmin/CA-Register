@@ -41,7 +41,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         query = """
             INSERT INTO [Register].[Outgoing] 
             ([Auth Site], [Auth Number], [Start Date], [Exp Date], [State],
-             [Receiver], [License], [Detination], [Transporter], [Transporter License],
+             [Receiver], [License], [Destination], [Transporter], [Transporter License],
              [NEPM], [Description], [Phys State], [Tonnage Initial],
              [Tonnage Remaining], [Generator], [Responsible])
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
