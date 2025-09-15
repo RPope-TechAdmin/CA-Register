@@ -31,6 +31,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             cursor.execute(query, (today, 0))  # safe parameterization
             rows = cursor.fetchall()
             cols = list(rows[0].keys()) if rows else []
+            logging.info(f"Rows:{rows}, Columns:{cols}")
 
         return func.HttpResponse(
             body=json.dumps({"columns": cols, "rows": rows}, default=str),
