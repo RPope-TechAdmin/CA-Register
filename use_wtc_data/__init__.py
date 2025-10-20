@@ -33,26 +33,23 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         cursor = conn.cursor()
 
         # === Insert into WTC table ===
-        query_insert = """
+        query_insert = f"""
             INSERT INTO [Register].[WTC] 
             ([Auth Site], [Auth Number], [Shipping Date], [Use Date], [Incoming/Outgoing],
              [WTC QLD], [WTC Ext], [NEPM], [Tonnage], [Authorised By])
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+             VALUES ({auth_site}, {auth_number}, {ship_date}, {use_date}, {direction}, {wtcqld}, {wtcext}, {nepm} {tonnage}, {responsible})
         """
-        cursor.execute(query_insert, (
-            auth_site, auth_number, ship_date, use_date, direction,
-            wtcqld, wtcext, nepm, tonnage, responsible
-        ))
+        cursor.execute(query_insert)
 
         # === Update the corresponding Incoming/Outgoing table ===
-        query_update = """
-            UPDATE [Register].[%s]
-            SET [Tonnage Remaining] = [Tonnage Remaining] - %s
-            WHERE [Auth Number] = %s AND [NEPM] = %s
+        query_update = f"""
+            UPDATE [Register].[{direction}]
+            SET [Tonnage Remaining] = [Tonnage Remaining] - {tonnage}
+            WHERE [Auth Number] = {auth_number} AND [NEPM] = {nepm}
         """
         logging.info(f"Insert Query: {query_insert}")
         logging.info(f"Alter Query: {query_update}")
-        cursor.execute(query_update, (direction, tonnage, auth_number, nepm))
+        cursor.execute(query_update)
 
         conn.commit()
         conn.close()
