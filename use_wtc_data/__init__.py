@@ -36,7 +36,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         query_insert = """
             INSERT INTO [Register].[WTC] 
             ([Auth Site], [Auth Number], [Shipping Date], [Use Date], [Incoming/Outgoing],
-             [WTC QLD], [WTC Ext], [NEPM], [Tonnage], [Responsible])
+             [WTC QLD], [WTC Ext], [NEPM], [Tonnage], [Authorised By])
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         cursor.execute(query_insert, (
