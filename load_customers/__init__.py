@@ -36,6 +36,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             
             # Combine and sort unique customer names
             combined_customers = sorted(list(incoming_customers.union(outgoing_customers)))
+            logging.info(f"Customers: {combined_customers}")
 
         return func.HttpResponse(
             body=json.dumps({"customers": combined_customers}, default=str),
