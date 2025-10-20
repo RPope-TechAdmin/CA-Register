@@ -5,7 +5,7 @@ import os
 import json
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info("Processing insert_in_data request.")
+    logging.info("Processing find_ca request.")
 
     try:
         # Parse JSON body from frontend
@@ -15,7 +15,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         state = data.get("state") # This is not used in the query
         sender = data.get("customer")
         nepm = data.get("nepm")
-        tonnage = data.get("tonnage")
+        tonnage = float(data.get("tonnage", 0)) # Convert tonnage to a float
         direction = data.get("direction")
 
         
