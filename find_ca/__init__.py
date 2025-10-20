@@ -12,7 +12,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         data = req.get_json()
 
         auth_site = data.get("auth_site")
-        state = data.get("state")
+        state = data.get("state") # This is not used in the query
         sender = data.get("customer")
         nepm = data.get("nepm")
         tonnage = data.get("tonnage")
@@ -29,37 +29,45 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             port=1433
         )
         if direction=="Incoming":
+            # Note: 'state' and 'sender' from payload are not used here.
             query = """
                 SELECT [ID], [Auth Site], [Auth Number], [Start Date], [Exp Date], [State],
                 [Sender], [NEPM], [Phys State], [Tonnage Initial],
                 [Tonnage Remaining], [Generator], [Responsible]
                 FROM [Register].[Incoming]
-                WHERE [Auth Site] = '%s' AND [NEPM] = '%s' AND [Tonnage Remaining] >= %s AND [State] = '%s' and [Sender] = '%s'
+                WHERE [Auth Site] = %s AND [NEPM] = %s AND [Tonnage Remaining] >= %s
             """
 
-            cursor = conn.cursor()
-            cursor.execute(query, (
-                auth_site, nepm, tonnage, state, sender
-            ))
+            cursor = conn.cursor(as_dict=True)
+            cursor.execute(query, (auth_site, nepm, tonnage))
+
         elif direction == "Outgoing":
+            # Note: 'state' and 'sender' (customer) from payload are not used here.
             query = """
                 SELECT [ID], [Auth Site], [Auth Number], [Start Date], [Exp Date], [State],
-                [Sender], [NEPM], [Phys State], [Tonnage Initial],
+                [Receiver], [NEPM], [Phys State], [Tonnage Initial],
                 [Tonnage Remaining], [Generator], [Responsible]
                 FROM [Register].[Outgoing]
-                WHERE [Auth Site] = '%s' AND [NEPM] = '%s' AND [Tonnage Remaining] >= %s AND [State] = '%s' and [Receiver] = '%s'
+                WHERE [Auth Site] = %s AND [NEPM] = %s AND [Tonnage Remaining] >= %s
             """
 
-            cursor = conn.cursor()
-            cursor.execute(query, (
-                auth_site, nepm, tonnage, state, sender
-            ))
+            cursor = conn.cursor(as_dict=True)
+            cursor.execute(query, (auth_site, nepm, tonnage))
+
+        rows = cursor.fetchall()
 
         conn.commit()
         conn.close()
 
+        if not rows:
+            return func.HttpResponse(
+                body=json.dumps({"message": "No matching CAs found."}),
+                mimetype="application/json",
+                status_code=404
+            )
+
         return func.HttpResponse(
-            body=json.dumps({"status": "inserted"}),
+            body=json.dumps({"results": rows}, default=str),
             mimetype="application/json",
             status_code=200
         )
