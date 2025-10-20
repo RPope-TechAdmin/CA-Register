@@ -12,12 +12,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         data = req.get_json()
 
         auth_site = data.get("auth_site")
-        state = data.get("state") # This is not used in the query
-        sender = data.get("customer")
+        state = data.get("state")
+        customer = data.get("customer")
         nepm = data.get("nepm")
         tonnage = float(data.get("tonnage", 0)) # Convert tonnage to a float
         direction = data.get("direction")
-
         
         
         # === pymssql connection (use env vars from Azure settings) ===
@@ -28,32 +27,40 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             database=os.getenv("SQL_DATABASE"),
             port=1433
         )
+
+        params = []
+        where_clauses = []
+
+        if auth_site:
+            where_clauses.append("[Auth Site] = %s")
+            params.append(auth_site)
+        if nepm:
+            where_clauses.append("[NEPM] = %s")
+            params.append(nepm)
+        if state:
+            where_clauses.append("[State] = %s")
+            params.append(state)
+        
+        where_clauses.append("[Tonnage Remaining] >= %s")
+        params.append(tonnage)
+
         if direction=="Incoming":
-            # Note: 'state' and 'sender' from payload are not used here.
-            query = """
-                SELECT [ID], [Auth Site], [Auth Number], [Start Date], [Exp Date], [State],
-                [Sender], [NEPM], [Phys State], [Tonnage Initial],
-                [Tonnage Remaining], [Generator], [Responsible]
-                FROM [Register].[Incoming]
-                WHERE [Auth Site] = %s AND [NEPM] = %s AND [Tonnage Remaining] >= %s
-            """
-
-            cursor = conn.cursor(as_dict=True)
-            cursor.execute(query, (auth_site, nepm, tonnage))
-
+            base_query = "SELECT [ID], [Auth Site], [Auth Number], [Start Date], [Exp Date], [State], [Sender], [NEPM], [Phys State], [Tonnage Initial], [Tonnage Remaining], [Generator], [Responsible] FROM [Register].[Incoming]"
+            if customer:
+                where_clauses.append("[Sender] = %s")
+                params.append(customer)
         elif direction == "Outgoing":
-            # Note: 'state' and 'sender' (customer) from payload are not used here.
-            query = """
-                SELECT [ID], [Auth Site], [Auth Number], [Start Date], [Exp Date], [State],
-                [Receiver], [NEPM], [Phys State], [Tonnage Initial],
-                [Tonnage Remaining], [Generator], [Responsible]
-                FROM [Register].[Outgoing]
-                WHERE [Auth Site] = %s AND [NEPM] = %s AND [Tonnage Remaining] >= %s
-            """
+            base_query = "SELECT [ID], [Auth Site], [Auth Number], [Start Date], [Exp Date], [State], [Receiver], [NEPM], [Phys State], [Tonnage Initial], [Tonnage Remaining], [Generator], [Responsible] FROM [Register].[Outgoing]"
+            if customer:
+                where_clauses.append("[Receiver] = %s")
+                params.append(customer)
+        else:
+            return func.HttpResponse(body=json.dumps({"error": "Invalid direction specified"}), mimetype="application/json", status_code=400)
 
-            cursor = conn.cursor(as_dict=True)
-            cursor.execute(query, (auth_site, nepm, tonnage))
+        query = f"{base_query} WHERE {' AND '.join(where_clauses)}"
 
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute(query, tuple(params))
         rows = cursor.fetchall()
 
         conn.commit()
