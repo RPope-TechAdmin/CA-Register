@@ -6,7 +6,7 @@
       "direction": "in",
       "name": "req",
       "methods": ["post", "get", "options"],
-      "route": "load_all_out_data"
+      "route": "load_customers"
     },
     {
       "type": "http",

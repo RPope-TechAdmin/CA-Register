@@ -6,7 +6,7 @@
       "direction": "in",
       "name": "req",
       "methods": ["post", "get", "options"],
-      "route": "load_all_in_data"
+      "route": "find_ca"
     },
     {
       "type": "http",
