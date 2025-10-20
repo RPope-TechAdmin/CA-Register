@@ -35,7 +35,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         # === Insert into WTC table ===
         query_insert = """
             INSERT INTO [Register].[WTC] 
-            ([Auth Site], [Auth Number], [Ship Date], [Use Date], [Incoming/Outgoing],
+            ([Auth Site], [Auth Number], [Shipping Date], [Use Date], [Incoming/Outgoing],
              [WTC QLD], [WTC Ext], [NEPM], [Tonnage], [Responsible])
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
