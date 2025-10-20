@@ -50,6 +50,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             SET [Tonnage Remaining] = [Tonnage Remaining] - %s
             WHERE [Auth Number] = %s AND [NEPM] = %s
         """
+        logging.info(f"Insert Query: {query_insert}")
+        logging.info(f"Alter Query: {query_update}")
         cursor.execute(query_update, (direction, tonnage, auth_number, nepm))
 
         conn.commit()
