@@ -45,12 +45,12 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         ))
 
         # === Update the corresponding Incoming/Outgoing table ===
-        query_update = f"""
-            UPDATE [Register].[{direction}]
+        query_update = """
+            UPDATE [Register].[%s]
             SET [Tonnage Remaining] = [Tonnage Remaining] - %s
             WHERE [Auth Number] = %s AND [NEPM] = %s
         """
-        cursor.execute(query_update, (tonnage, auth_number, nepm))
+        cursor.execute(query_update, (direction, tonnage, auth_number, nepm))
 
         conn.commit()
         conn.close()
