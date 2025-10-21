@@ -39,6 +39,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
              [WTC QLD], [WTC Ext], [NEPM], [Tonnage], [Authorised By])
              VALUES ({auth_site}, {auth_number}, {ship_date}, {use_date}, {direction}, {wtcqld}, {wtcext}, {nepm} {tonnage}, {responsible})
         """
+        logging.info(f"Insert Query: {query_insert}")
         cursor.execute(query_insert)
 
         # === Update the corresponding Incoming/Outgoing table ===
@@ -47,7 +48,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             SET [Tonnage Remaining] = [Tonnage Remaining] - {tonnage}
             WHERE [Auth Number] = {auth_number} AND [NEPM] = {nepm}
         """
-        logging.info(f"Insert Query: {query_insert}")
+        
         logging.info(f"Alter Query: {query_update}")
         cursor.execute(query_update)
 
