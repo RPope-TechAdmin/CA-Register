@@ -19,8 +19,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         wtcqld = data.get("wtcqld")
         wtcext = data.get("wtcext")
         nepm = data.get("nepm")
-        tonnage = data.get("tonnage")
-        responsible = data.get("applicant")
+        tonnage = data.get("ton")
+        responsible = data.get("user")
 
         # === Connect with pymssql ===
         conn = pymssql.connect(
