@@ -62,7 +62,7 @@ def main(mytimer: func.TimerRequest) -> None:
 
     today = datetime.now()
     cutoff = today + timedelta(days=45)
-    logging.debug(f"Date range: {today.date()} → {cutoff.date()}")
+    logging.info(f"Date range: {today.date()} → {cutoff.date()}")
 
     query = """
         SELECT [Auth Number], [Exp Date], [Responsible]
