@@ -89,6 +89,8 @@ def main(mytimer: func.TimerRequest) -> None:
             # Log sample row for debugging
             logging.debug(f"First row sample: {rows[0] if rows else 'No data'}")
 
+            today=datetime.now()
+
             # Build one consolidated email
             recipient_email = "rpope@purenv.au"
             body_lines = [
