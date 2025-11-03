@@ -66,7 +66,7 @@ def main(mytimer: func.TimerRequest) -> None:
 
     query = """
         SELECT [Auth Number], [Exp Date], [Responsible]
-        FROM [Register].[Incoming]
+        FROM [Register].[Outgoing]
         WHERE [Exp Date] <= %s AND [Exp Date] >= %s
     """
 
@@ -105,7 +105,7 @@ def main(mytimer: func.TimerRequest) -> None:
                 body_lines = [
                     f"Hello,",
                     "",
-                    "The following incoming CA's are expiring soon:",
+                    "The following Outgoing CA's are expiring soon:",
                     ""
                 ]
                 for item in items:
@@ -124,7 +124,7 @@ def main(mytimer: func.TimerRequest) -> None:
                 body = "\n".join(body_lines)
 
                 try:
-                    send_email(recipient_email, "⚠️ Upcoming Incoming CA Expiries", body)
+                    send_email(recipient_email, "⚠️ Upcoming Outgoing CA Expiries", body)
                 except Exception as e:
                     logging.error(f"❌ Failed to send email for Responsible: {responsible}")
                     logging.exception(e)
