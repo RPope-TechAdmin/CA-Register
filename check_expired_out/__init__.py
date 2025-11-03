@@ -89,6 +89,8 @@ def main(mytimer: func.TimerRequest) -> None:
             # Log sample row for debugging
             logging.debug(f"First row sample: {rows[0] if rows else 'No data'}")
 
+            today=datetime.now()
+
             # Build one consolidated email
             recipient_email = "rpope@purenv.au"
             body_lines = [
@@ -118,6 +120,7 @@ def main(mytimer: func.TimerRequest) -> None:
                     f"- Auth {auth_no} (expires {exp_str} — in {days_remaining} days ({exp_date})) - Responsible: {responsible}"
                 )
 
+
             body_lines.extend([
                 "",
                 "Please review and renew as necessary.",
@@ -128,7 +131,7 @@ def main(mytimer: func.TimerRequest) -> None:
             body = "\n".join(body_lines)
 
             try:
-                send_email(recipient_email, "⚠️ Upcoming Outgoing CA Expiries", body)
+                send_email(recipient_email, "⚠️ Upcoming outgoing CA Expiries", body)
             except Exception as e:
                 logging.error("❌ Failed to send consolidated expiry email.")
                 logging.exception(e)
