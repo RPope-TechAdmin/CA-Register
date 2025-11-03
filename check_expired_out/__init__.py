@@ -26,7 +26,7 @@ def send_email(recipient: str, subject: str, body: str) -> None:
 
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
-            smtp.set_debuglevel(1)  # enable verbose SMTP logs
+            smtp.set_debuglevel(1)  # verbose SMTP logs
             smtp.starttls()
             smtp.login(sender, eml_pass)
             smtp.send_message(msg)
@@ -89,53 +89,43 @@ def main(mytimer: func.TimerRequest) -> None:
             # Log sample row for debugging
             logging.debug(f"First row sample: {rows[0] if rows else 'No data'}")
 
-            # Group by Responsible person
-            grouped = {}
-            for row in rows:
-                resp = row.get("Responsible") or "Unknown"
-                grouped.setdefault(resp, []).append(row)
+            # Build one consolidated email
+            recipient_email = "rpope@purenv.au"
+            body_lines = [
+                f"Hello,",
+                "",
+                "The following outgoing CA's are expiring soon (within the next 45 days):",
+                ""
+            ]
 
-            logging.debug(f"Grouped records by responsible: {list(grouped.keys())}")
+            for item in rows:
+                exp_date = item.get("Exp Date")
+                if isinstance(exp_date, datetime):
+                    exp_date = exp_date.strftime("%Y-%m-%d")
+                auth_no = item.get("Auth Number", "Unknown")
+                responsible = item.get("Responsible", "Unknown")
+                body_lines.append(f"- Auth {auth_no} (expires {exp_date} ({today-exp_date} days)) - Responsible: {responsible}")
 
-            # Send email for each responsible user
-            for responsible, items in grouped.items():
-                logging.info(f"📨 Preparing email for Responsible: {responsible}")
-                recipient_email = "rpope@purenv.au"
+            body_lines.extend([
+                "",
+                "Please review and renew as necessary.",
+                "",
+                "Thanks,",
+                "The CA Register Check Bot"
+            ])
+            body = "\n".join(body_lines)
 
-                body_lines = [
-                    f"Hello,",
-                    "",
-                    "The following Outgoing CA's are expiring soon:",
-                    ""
-                ]
-                for item in items:
-                    exp_date = item.get("Exp Date")
-                    if isinstance(exp_date, datetime):
-                        exp_date = exp_date.strftime("%Y-%m-%d")
-                    body_lines.append(f"- Auth {item['Auth Number']} (expires {exp_date}) - Responsible Party: {responsible}")
+            try:
+                send_email(recipient_email, "⚠️ Upcoming Outgoing CA Expiries", body)
+            except Exception as e:
+                logging.error("❌ Failed to send consolidated expiry email.")
+                logging.exception(e)
 
-                body_lines.extend([
-                    "",
-                    "Please review and renew as necessary.",
-                    "",
-                    "Thanks,",
-                    "The CA Register Check Bot"
-                ])
-                body = "\n".join(body_lines)
-
-                try:
-                    send_email(recipient_email, "⚠️ Upcoming Outgoing CA Expiries", body)
-                except Exception as e:
-                    logging.error(f"❌ Failed to send email for Responsible: {responsible}")
-                    logging.exception(e)
-
-    except pymssql.InterfaceError as e:
+    except pymssql.InterfaceError:
         logging.exception("❌ Database interface error: check SQL connection string or credentials.")
-    except pymssql.OperationalError as e:
+    except pymssql.OperationalError:
         logging.exception("❌ Operational SQL error: possible network/timeout issue.")
     except Exception as e:
         logging.exception(f"❌ Unexpected error during DB operation: {e}")
 
     logging.info("✅ Function execution complete.")
-
-
