@@ -103,7 +103,7 @@ def main(mytimer: func.TimerRequest) -> None:
                 recipient_email = "rpope@purenv.au"
 
                 body_lines = [
-                    f"Hello {responsible},",
+                    f"Hello,",
                     "",
                     "The following incoming CA's are expiring soon:",
                     ""
@@ -112,7 +112,7 @@ def main(mytimer: func.TimerRequest) -> None:
                     exp_date = item.get("Exp Date")
                     if isinstance(exp_date, datetime):
                         exp_date = exp_date.strftime("%Y-%m-%d")
-                    body_lines.append(f"- Auth {item['Auth Number']} (expires {exp_date})")
+                    body_lines.append(f"- Auth {item['Auth Number']} (expires {exp_date}) - Responsible Party: {responsible}")
 
                 body_lines.extend([
                     "",
@@ -124,7 +124,7 @@ def main(mytimer: func.TimerRequest) -> None:
                 body = "\n".join(body_lines)
 
                 try:
-                    send_email(recipient_email, "⚠️ Upcoming Authorisation Expiry", body)
+                    send_email(recipient_email, "⚠️ Upcoming CA Expiries", body)
                 except Exception as e:
                     logging.error(f"❌ Failed to send email for Responsible: {responsible}")
                     logging.exception(e)
