@@ -104,6 +104,8 @@ def main(mytimer: func.TimerRequest) -> None:
                 exp_date = item.get("Exp Date")
                 auth_no = item.get("Auth Number", "Unknown")
                 responsible = item.get("Responsible", "Unknown")
+                if not responsible:
+                    responsible="Unknown"
 
                 if isinstance(exp_date, datetime):
                     days_remaining = (exp_date.date() - today.date()).days
