@@ -100,11 +100,23 @@ def main(mytimer: func.TimerRequest) -> None:
 
             for item in rows:
                 exp_date = item.get("Exp Date")
-                if isinstance(exp_date, datetime):
-                    exp_date = exp_date.strftime("%Y-%m-%d")
                 auth_no = item.get("Auth Number", "Unknown")
                 responsible = item.get("Responsible", "Unknown")
-                body_lines.append(f"- Auth {auth_no} (expires {exp_date} ({today-exp_date} days)) - Responsible: {responsible}")
+
+                if isinstance(exp_date, datetime):
+                    days_remaining = (exp_date.date() - today.date()).days
+                    exp_str = exp_date.strftime("%Y-%m-%d")
+                else:
+                    # handle if date comes back as just a date
+                    exp_str = str(exp_date)
+                    try:
+                        days_remaining = (datetime.strptime(exp_str, "%Y-%m-%d").date() - today.date()).days
+                    except Exception:
+                        days_remaining = "?"
+
+                body_lines.append(
+                    f"- Auth {auth_no} (expires {exp_str} — in {days_remaining} days ({exp_date})) - Responsible: {responsible}"
+                )
 
             body_lines.extend([
                 "",
