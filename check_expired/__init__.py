@@ -12,6 +12,9 @@ def send_email(recipient: str, subject: str, body: str) -> None:
     sender = os.getenv("FEEDBACK_EMAIL")
     eml_pass = os.getenv("FEEDBACK_PASS")
 
+    logging.debug(f"Preparing to send email to: {recipient}")
+    logging.debug(f"Email sender: {sender}, Password present: {bool(eml_pass)}")
+
     if not sender or not eml_pass:
         raise EnvironmentError("Missing FEEDBACK_EMAIL or FEEDBACK_PASS environment variables")
 
@@ -23,16 +26,24 @@ def send_email(recipient: str, subject: str, body: str) -> None:
 
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
+            smtp.set_debuglevel(1)  # enable verbose SMTP logs
             smtp.starttls()
             smtp.login(sender, eml_pass)
             smtp.send_message(msg)
-        logging.info(f"✅ Email sent to {recipient}")
+        logging.info(f"✅ Email successfully sent to {recipient}")
+    except smtplib.SMTPAuthenticationError:
+        logging.exception("❌ Authentication failed: Check Gmail App Password or FEEDBACK_PASS env var.")
+        raise
+    except smtplib.SMTPConnectError:
+        logging.exception("❌ Connection to Gmail SMTP failed — check network/firewall.")
+        raise
     except Exception as e:
-        logging.exception(f"❌ Failed to send email to {recipient}: {e}")
+        logging.exception(f"❌ Unexpected SMTP error: {e}")
+        raise
 
 
 def main(mytimer: func.TimerRequest) -> None:
-    logging.info("⏰ Checking for expiring authorisations...")
+    logging.info("⏰ Starting CA Expiry Checker Timer Function")
 
     # === SQL CONNECTION VARIABLES FROM APP SETTINGS ===
     server = os.getenv("SQL_SERVER")
@@ -40,12 +51,18 @@ def main(mytimer: func.TimerRequest) -> None:
     username = os.getenv("SQL_USERNAME")
     password = os.getenv("SQL_PASSWORD")
 
+    logging.debug(f"SQL_SERVER: {server}")
+    logging.debug(f"SQL_DATABASE: {database}")
+    logging.debug(f"SQL_USERNAME: {username}")
+    logging.debug(f"SQL_PASSWORD present: {bool(password)}")
+
     if not all([server, database, username, password]):
         logging.error("❌ Missing one or more SQL connection environment variables.")
         return
 
     today = datetime.now()
     cutoff = today + timedelta(days=45)
+    logging.debug(f"Date range: {today.date()} → {cutoff.date()}")
 
     query = """
         SELECT [Auth Number], [Exp Date], [Responsible]
@@ -54,14 +71,23 @@ def main(mytimer: func.TimerRequest) -> None:
     """
 
     try:
+        logging.info("🔌 Connecting to SQL Server...")
         with pymssql.connect(server, username, password, database) as conn:
+            logging.info("✅ SQL connection established successfully")
+
             cursor = conn.cursor(as_dict=True)
+            logging.debug("Executing SQL query...")
             cursor.execute(query, (cutoff, today))
             rows = cursor.fetchall()
 
+            logging.info(f"📦 Query executed. Rows fetched: {len(rows)}")
+
             if not rows:
-                logging.info("✅ No authorisations expiring within 5 days.")
+                logging.info("✅ No authorisations expiring within 45 days.")
                 return
+
+            # Log sample row for debugging
+            logging.debug(f"First row sample: {rows[0] if rows else 'No data'}")
 
             # Group by Responsible person
             grouped = {}
@@ -69,12 +95,15 @@ def main(mytimer: func.TimerRequest) -> None:
                 resp = row.get("Responsible") or "Unknown"
                 grouped.setdefault(resp, []).append(row)
 
+            logging.debug(f"Grouped records by responsible: {list(grouped.keys())}")
+
             # Send email for each responsible user
             for responsible, items in grouped.items():
+                logging.info(f"📨 Preparing email for Responsible: {responsible}")
                 recipient_email = "rpope@purenv.au"
 
                 body_lines = [
-                    f"Hello,",
+                    f"Hello {responsible},",
                     "",
                     "The following incoming CA's are expiring soon:",
                     ""
@@ -83,16 +112,30 @@ def main(mytimer: func.TimerRequest) -> None:
                     exp_date = item.get("Exp Date")
                     if isinstance(exp_date, datetime):
                         exp_date = exp_date.strftime("%Y-%m-%d")
-                    body_lines.append(f"- Auth {item['Auth Number']} (expires {exp_date}) - Responsible: {responsible}")
+                    body_lines.append(f"- Auth {item['Auth Number']} (expires {exp_date})")
 
-                body_lines.append("")
-                body_lines.append("Please review and renew as necessary.")
-                body_lines.append("Thanks,")
-                body_lines.append("The CA Register Check Bot")
+                body_lines.extend([
+                    "",
+                    "Please review and renew as necessary.",
+                    "",
+                    "Thanks,",
+                    "The CA Register Check Bot"
+                ])
                 body = "\n".join(body_lines)
 
-                send_email(recipient_email, "⚠️ Upcoming Authorisation Expiry", body)
+                try:
+                    send_email(recipient_email, "⚠️ Upcoming Authorisation Expiry", body)
+                except Exception as e:
+                    logging.error(f"❌ Failed to send email for Responsible: {responsible}")
+                    logging.exception(e)
 
+    except pymssql.InterfaceError as e:
+        logging.exception("❌ Database interface error: check SQL connection string or credentials.")
+    except pymssql.OperationalError as e:
+        logging.exception("❌ Operational SQL error: possible network/timeout issue.")
     except Exception as e:
-        logging.exception(f"❌ Database query or email failed: {e}")
+        logging.exception(f"❌ Unexpected error during DB operation: {e}")
+
+    logging.info("✅ Function execution complete.")
+
 
