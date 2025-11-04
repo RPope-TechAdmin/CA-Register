@@ -11,5 +11,13 @@
   "extensionBundle": {
     "id": "Microsoft.Azure.Functions.ExtensionBundle",
     "version": "[4.*, 5.0.0)"
+  },
+  "extensions": {
+    "timers": {
+      "scheduleMonitor": {
+        "useMonitor": true
+      },
+      "timezone": "AUS Eastern Standard Time"
+    }
   }
 }
