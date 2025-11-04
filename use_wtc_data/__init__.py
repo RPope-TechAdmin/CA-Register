@@ -13,6 +13,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         auth_site = data.get("auth_site")
         auth_number = data.get("auth_num")
+        cust_name=data.get("cust_name")
         ship_date = data.get("ship_date")
         use_date = data.get("use_date")
         direction = data.get("direction")   # "Incoming" or "Outgoing"
@@ -36,8 +37,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         query_insert = f"""
             INSERT INTO [Register].[WTC] 
             ([Auth Site], [Auth Number], [Shipping Date], [Use Date], [Incoming/Outgoing],
-             [WTC QLD], [WTC Ext], [NEPM], [Tonnage], [Authorised By])
-             VALUES ('{auth_site}', '{auth_number}', '{ship_date}', '{use_date}', '{direction}', '{wtcqld}', '{wtcext}', '{nepm}', {tonnage}, '{responsible}')
+             [WTC QLD], [WTC Ext], [NEPM], [Tonnage], [Authorised By], [Customer])
+             VALUES ('{auth_site}', '{auth_number}', '{ship_date}', '{use_date}', '{direction}', '{wtcqld}', '{wtcext}', '{nepm}', {tonnage}, '{responsible}', '{cust_name}')
         """
         logging.info(f"Insert Query: {query_insert}")
         cursor.execute(query_insert)
