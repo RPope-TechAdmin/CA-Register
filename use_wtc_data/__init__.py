@@ -42,18 +42,19 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         logging.info(f"Insert Query: {query_insert}")
         cursor.execute(query_insert)
 
-        # === Update the corresponding Incoming/Outgoing table ===
-        query_update = f"""
-            UPDATE [Register].[{direction}]
-            SET [Tonnage Remaining] = [Tonnage Remaining] - {tonnage}
-            WHERE [Auth Number] = '{auth_number}' AND [NEPM] = '{nepm}'
-        """
-        
-        logging.info(f"Alter Query: {query_update}")
-        cursor.execute(query_update)
+        if auth_site and tonnage:
+            # === Update the corresponding Incoming/Outgoing table ===
+            query_update = f"""
+                UPDATE [Register].[{direction}]
+                SET [Tonnage Remaining] = [Tonnage Remaining] - {tonnage}
+                WHERE [Auth Number] = '{auth_number}' AND [NEPM] = '{nepm}'
+            """
+            
+            logging.info(f"Alter Query: {query_update}")
+            cursor.execute(query_update)
 
-        conn.commit()
-        conn.close()
+            conn.commit()
+            conn.close()
 
         return func.HttpResponse(
             body=json.dumps({"status": "inserted"}),
