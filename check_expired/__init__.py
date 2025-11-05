@@ -92,7 +92,7 @@ def main(mytimer: func.TimerRequest) -> None:
             today=datetime.now()
 
             # Build one consolidated email
-            recipient_email = "rpope@purenv.au"
+            recipient_email = "rpope@purenv.au; mgrave@purenv.au"
             body_lines = [
                 f"Hello,",
                 "",
