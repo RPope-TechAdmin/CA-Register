@@ -32,8 +32,34 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             port=1433
         )
         cursor = conn.cursor()
+        
+        # ======================================================
+        # 1️⃣ CHECK IF AUTH NUMBER EXISTS IN Incoming/Outgoing
+        # ======================================================
 
-        # === Insert into WTC table ===
+        query_check = f"""
+            SELECT COUNT(*) 
+            FROM [Register].[{direction}]
+            WHERE [Auth Number] = %s AND [NEPM] = %s
+        """
+
+        cursor.execute(query_check, (auth_number, nepm))
+        (count,) = cursor.fetchone()
+
+        if count == 0:
+            conn.close()
+            return func.HttpResponse(
+                body=json.dumps({
+                    "error": f"Auth Number '{auth_number}' does not exist in {direction} register."
+                }),
+                mimetype="application/json",
+                status_code=400
+            )
+
+        # ======================================================
+        # 2️⃣ INSERT INTO WTC TABLE (safe because record exists)
+        # ======================================================
+
         query_insert = f"""
             INSERT INTO [Register].[WTC] 
             ([Auth Site], [Auth Number], [Shipping Date], [Use Date], [Incoming/Outgoing],
@@ -44,7 +70,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         cursor.execute(query_insert)
 
         if auth_site and tonnage:
-            # === Update the corresponding Incoming/Outgoing table ===
+        # ======================================================
+        # 3️⃣ UPDATE TONNAGE REMAINING
+        # ======================================================
             query_update = f"""
                 UPDATE [Register].[{direction}]
                 SET [Tonnage Remaining] = [Tonnage Remaining] - {tonnage}
@@ -64,7 +92,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         )
 
     except Exception as e:
-        logging.error(f"Insert failed: {e}")
+        logging.error(f"Insert failed, please ensure all information is formatted correctly. Error: {e}")
         return func.HttpResponse(
             body=json.dumps({"error": str(e)}),
             mimetype="application/json",
