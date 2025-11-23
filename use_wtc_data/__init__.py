@@ -94,7 +94,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     except Exception as e:
         logging.error(f"Insert failed, please ensure all information is formatted correctly. Error: {e}")
         return func.HttpResponse(
-            body=json.dumps({"error": "Looks like something went wrong. Please make sure that the CA you're using is in the register, and that the information is formatted correctly."}),
+            body=json.dumps({"error": {e}}),
             mimetype="application/json",
             status_code=500
         )
