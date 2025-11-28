@@ -47,12 +47,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         (count,) = cursor.fetchone()
 
         if count == 0:
+            logging.error(f"Error: Auth Number Not Found. {auth_number}, {nepm}")
             conn.close()
             return func.HttpResponse(
                 body=json.dumps({
                     "error": f"Auth Number '{auth_number}' does not exist in {direction} register."
                 }),
                 mimetype="application/json",
+                
                 status_code=400
             )
 
