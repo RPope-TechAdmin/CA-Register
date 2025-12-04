@@ -18,7 +18,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
     query = """
         SELECT * FROM [Register].[WTC]
-        ORDER BY [Use Date] ASC
+        ORDER BY [Shipping Date] ASC
     """
 
     try:
