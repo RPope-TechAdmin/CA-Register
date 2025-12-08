@@ -37,52 +37,59 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         # 1️⃣ CHECK IF AUTH NUMBER EXISTS IN Incoming/Outgoing
         # ======================================================
 
-        query_check = f"""
-            SELECT COUNT(*) 
-            FROM [Register].[{direction}]
-            WHERE [Auth Number] = %s AND [NEPM] = %s
-        """
+        if not auth_number:
+            logging.info("Blank CA Number, skipping verification.")
+        else:
+            query_check = f"""
+                SELECT COUNT(*) 
+                FROM [Register].[{direction}]
+                WHERE [Auth Number] = %s AND [NEPM] = %s
+            """
 
-        cursor.execute(query_check, (auth_number, nepm))
-        (count,) = cursor.fetchone()
+            cursor.execute(query_check, (auth_number, nepm))
+            (count,) = cursor.fetchone()
 
-        if count == 0:
-            logging.error(f"Error: Auth Number Not Found. {auth_number}, {nepm}")
-            conn.close()
-            return func.HttpResponse(
-                body=json.dumps({
-                    "error": f"Auth Number '{auth_number}' does not exist in {direction} register."
-                }),
-                mimetype="application/json",
-                
-                status_code=400
-            )
+            if count == 0:
+                logging.error(f"Error: Auth Number Not Found. {auth_number}, {nepm}")
+                conn.close()
+                return func.HttpResponse(
+                    body=json.dumps({
+                        "error": f"Auth Number '{auth_number}' does not exist in {direction} register."
+                    }),
+                    mimetype="application/json",
+                    
+                    status_code=400
+                )
+        
+        
 
         # ======================================================
         # 2️⃣ INSERT INTO WTC TABLE (safe because record exists)
         # ======================================================
 
-        query_insert = f"""
+        query_insert = """
             INSERT INTO [Register].[WTC] 
             ([Auth Site], [Auth Number], [Shipping Date], [Use Date], [Incoming/Outgoing],
              [WTC QLD], [WTC Ext], [NEPM], [Tonnage], [Authorised By], [Customer])
-             VALUES ('{auth_site}', '{auth_number}', '{ship_date}', '{use_date}', '{direction}', '{wtcqld}', '{wtcext}', '{nepm}', {tonnage}, '{responsible}', '{cust_name}')
+             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        logging.info(f"Insert Query: {query_insert}")
-        cursor.execute(query_insert)
+        insert_params = (auth_site, auth_number, ship_date, use_date, direction, wtcqld, wtcext, nepm, tonnage, responsible, cust_name)
+        logging.info(f"Insert Query: {query_insert} with params {insert_params}")
+        cursor.execute(query_insert, insert_params)
 
         if auth_site and tonnage:
         # ======================================================
         # 3️⃣ UPDATE TONNAGE REMAINING
         # ======================================================
+            # Use a parameterized query to prevent SQL injection
             query_update = f"""
                 UPDATE [Register].[{direction}]
-                SET [Tonnage Remaining] = [Tonnage Remaining] - {tonnage}
-                WHERE [Auth Number] = '{auth_number}' AND [NEPM] = '{nepm}'
+                SET [Tonnage Remaining] = [Tonnage Remaining] - %s
+                WHERE [Auth Number] = %s AND [NEPM] = %s
             """
-            
-            logging.info(f"Alter Query: {query_update}")
-            cursor.execute(query_update)
+            update_params = (tonnage, auth_number, nepm)
+            logging.info(f"Alter Query: {query_update} with params {update_params}")
+            cursor.execute(query_update, update_params)
 
             conn.commit()
             conn.close()
@@ -95,8 +102,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
     except Exception as e:
         logging.error(f"Insert failed, please ensure all information is formatted correctly. Error: {e}")
+        # It's better to return a string representation of the error.
         return func.HttpResponse(
-            body=json.dumps({"error": {e}}),
+            body=json.dumps({"error": str(e)}),
             mimetype="application/json",
             status_code=500
         )
