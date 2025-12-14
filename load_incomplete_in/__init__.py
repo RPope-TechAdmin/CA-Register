@@ -37,7 +37,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             else:
                 # If no rows returned, fetch column names from description
                 cursor2 = conn.cursor()
-                cursor2.execute(query, (today, 0))
+                cursor2.execute(query)
                 cols = [desc[0] for desc in cursor2.description]
                 cursor2.close()
 
