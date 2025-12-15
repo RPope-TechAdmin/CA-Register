@@ -1,4 +1,13 @@
 azure-functions
 azure-identity
-pyodbc
+pdfplumber==0.5.28
+sqlalchemy
 pymssql
+python-tds
+requests_toolbelt
+requests
+python-multipart
+flask
+openpyxl
+pyodbc
+python-docx
