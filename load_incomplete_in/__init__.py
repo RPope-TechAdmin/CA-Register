@@ -21,7 +21,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                [Sender], [NEPM], [Phys State], [Tonnage Initial],
                [Tonnage Remaining], [Generator], [Responsible]
         FROM [Register].[Incoming] 
-        WHERE [Completion]= NULL
+        WHERE [Completion]= ''
         ORDER BY [Exp Date] ASC
     """
 
