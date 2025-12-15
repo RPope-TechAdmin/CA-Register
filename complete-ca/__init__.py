@@ -4,6 +4,11 @@ import pymssql
 import os
 import json
 
+TABLE_MAP = {
+    "Incoming": "Incoming",
+    "Outgoing": "Outgoing"
+}
+
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info("Processing insert_in_data request.")
 
@@ -15,6 +20,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         id_num = data.get("id_num")
         direction = data.get("direction")
 
+        table = TABLE_MAP.get(direction)
+        if not table:
+            raise ValueError("Invalid direction")
+        
         # === pymssql connection (use env vars from Azure settings) ===
         conn = pymssql.connect(
             server=os.getenv("SQL_SERVER"),
@@ -24,13 +33,15 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             port=1433
         )
 
-        query = """
-            UPDATE [Register].[%s]
-            SET [Completion] = '%s' WHERE [ID] = %s
+        query = f"""
+            UPDATE [Register].[{table}]
+            SET [Completion] = %s
+            WHERE [ID] = %s
         """
 
+
         cursor = conn.cursor()
-        cursor.execute(query, (direction, comp_note, id_num))
+        cursor.execute(query, (comp_note, id_num))
         conn.commit()
         conn.close()
 
