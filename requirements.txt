@@ -2,3 +2,5 @@ azure-functions
 azure-identity
 pyodbc
 pymssql
+pandas
+openpyxl
