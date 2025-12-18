@@ -21,14 +21,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                [Receiver], [NEPM], [Phys State], [Tonnage Initial],
                [Tonnage Remaining], [Generator], [Responsible]
         FROM [Register].[Outgoing] 
-        WHERE [Completion]= ''
+        WHERE [Completion]= '' AND [Exp Date] < %s AND [Tonnage Remaining] <= 0
         ORDER BY [Exp Date] ASC
     """
 
     try:
         with pymssql.connect(server, username, password, database) as conn:
             cursor = conn.cursor(as_dict=True)
-            cursor.execute(query)
+            cursor.execute(query, today)
             rows = cursor.fetchall()
 
             # Ensure columns list is always available
