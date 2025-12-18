@@ -16,7 +16,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     queries = {
         "Incoming": "SELECT * FROM [Register].[Incoming]",
         "Outgoing": "SELECT * FROM [Register].[Outgoing]",
-        "Waste Tracking": "SELECT * FROM [Register].[WasteTracking]"
+        "Waste Tracking": "SELECT * FROM [Register].[WTC]"
     }
 
     try:
