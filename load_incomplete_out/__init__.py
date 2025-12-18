@@ -22,7 +22,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                [Receiver], [NEPM], [Phys State], [Tonnage Initial],
                [Tonnage Remaining], [Generator], [Responsible]
         FROM [Register].[Outgoing] 
-        WHERE [Completion]= '' AND [Exp Date] < %s AND [Tonnage Remaining] <= 0
+        WHERE [Completion]= '' AND [Exp Date] < %s
         ORDER BY [Exp Date] ASC
     """
     logging.info(f"Query: {query}")
