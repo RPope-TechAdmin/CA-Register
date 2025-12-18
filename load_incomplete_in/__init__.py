@@ -15,15 +15,17 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     password = os.getenv("SQL_PASSWORD")
 
     today = date.today()
+    logging.info(f"Today: {today}")
 
     query = """
         SELECT [ID], [Auth Site], [Auth Number], [Start Date], [Exp Date], [State],
                [Sender], [NEPM], [Phys State], [Tonnage Initial],
                [Tonnage Remaining], [Generator], [Responsible]
         FROM [Register].[Incoming] 
-        WHERE [Completion]= '' AND [Exp Date] < %s AND [Tonnage Remaining] <= 0
+        WHERE [Completion]= '' AND [Exp Date] < %s
         ORDER BY [Exp Date] ASC
     """
+    logging.info(f"Query: {query}")
 
     try:
         with pymssql.connect(server, username, password, database) as conn:
